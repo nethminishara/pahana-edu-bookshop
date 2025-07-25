@@ -6,13 +6,17 @@ import com.google.gson.Gson;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/customer/*")
 public class CustomerServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L; // Add this line
+    private static final long serialVersionUID = 1L;
     private CustomerService customerService;
     private Gson gson;
     
@@ -23,11 +27,26 @@ public class CustomerServlet extends HttpServlet {
     }
     
     @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String method = request.getMethod();
+        if ("PUT".equals(method)) {
+            doPut(request, response);
+        } else if ("DELETE".equals(method)) {
+            doDelete(request, response);
+        } else {
+            super.service(request, response);
+        }
+    }
+    
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         String pathInfo = request.getPathInfo();
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         
         try {
@@ -63,7 +82,7 @@ public class CustomerServlet extends HttpServlet {
             }
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.print("{\"error\":\"Internal server error\"}");
+            out.print("{\"error\":\"Internal server error: " + e.getMessage() + "\"}");
             e.printStackTrace();
         }
     }
@@ -73,20 +92,22 @@ public class CustomerServlet extends HttpServlet {
             throws ServletException, IOException {
         
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         
         try {
-            // Get parameters
-            String accountNumber = request.getParameter("accountNumber");
-            String name = request.getParameter("name");
-            String address = request.getParameter("address");
-            String telephone = request.getParameter("telephone");
-            String email = request.getParameter("email");
+            // Get parameters using the helper method
+            String accountNumber = getParameterSafely(request, "accountNumber");
+            String name = getParameterSafely(request, "name");
+            String address = getParameterSafely(request, "address");
+            String telephone = getParameterSafely(request, "telephone");
+            String email = getParameterSafely(request, "email");
+            
+            System.out.println("POST - Received parameters - Name: " + name + ", Telephone: " + telephone + 
+                             ", Email: " + email + ", Address: " + address + ", AccountNumber: " + accountNumber);
             
             // Validate required fields
-            if (name == null || name.trim().isEmpty() ||
-                telephone == null || telephone.trim().isEmpty()) {
-                
+            if (name == null || name.isEmpty() || telephone == null || telephone.isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print("{\"success\":false,\"message\":\"Name and telephone are required\"}");
                 return;
@@ -94,31 +115,27 @@ public class CustomerServlet extends HttpServlet {
             
             // Create customer object
             Customer customer = new Customer();
-            customer.setAccountNumber(accountNumber != null ? accountNumber.trim() : "");
-            customer.setName(name.trim());
-            customer.setAddress(address != null ? address.trim() : "");
-            customer.setTelephone(telephone.trim());
-            customer.setEmail(email != null ? email.trim() : "");
+            customer.setAccountNumber(accountNumber != null && !accountNumber.isEmpty() ? 
+                                    accountNumber : generateAccountNumber());
+            customer.setName(name);
+            customer.setAddress(address != null ? address : "");
+            customer.setTelephone(telephone);
+            customer.setEmail(email != null ? email : "");
             
-            if (customerService.validateCustomerData(customer)) {
-                boolean success = customerService.addCustomer(customer);
-                if (success) {
-                    out.print("{\"success\":true,\"message\":\"Customer added successfully\"}");
-                } else {
-                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    out.print("{\"success\":false,\"message\":\"Failed to add customer - database error\"}");
-                }
+            boolean success = customerService.addCustomer(customer);
+            if (success) {
+                out.print("{\"success\":true,\"message\":\"Customer added successfully\"}");
             } else {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.print("{\"success\":false,\"message\":\"Invalid customer data\"}");
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                out.print("{\"success\":false,\"message\":\"Failed to add customer - database error\"}");
             }
+            
         } catch (Exception e) {
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             out.print("{\"success\":false,\"message\":\"Internal server error: " + e.getMessage() + "\"}");
         }
     }
-
     
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
@@ -126,35 +143,55 @@ public class CustomerServlet extends HttpServlet {
         
         String pathInfo = request.getPathInfo();
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         
         try {
             if (pathInfo != null && pathInfo.length() > 1) {
                 int customerId = Integer.parseInt(pathInfo.substring(1));
                 
+                // Parse parameters from request body for PUT
+                Map<String, String> params = parseRequestBody(request);
+                
+                String name = params.get("name");
+                String address = params.get("address");
+                String telephone = params.get("telephone");
+                String email = params.get("email");
+                
+                System.out.println("PUT - Received parameters - Name: " + name + ", Telephone: " + telephone + 
+                                 ", Email: " + email + ", Address: " + address);
+                
+                // Validate required fields
+                if (name == null || name.isEmpty() || telephone == null || telephone.isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.print("{\"success\":false,\"message\":\"Name and telephone are required\"}");
+                    return;
+                }
+                
                 Customer customer = new Customer();
                 customer.setCustomerId(customerId);
-                customer.setName(request.getParameter("name"));
-                customer.setAddress(request.getParameter("address"));
-                customer.setTelephone(request.getParameter("telephone"));
-                customer.setEmail(request.getParameter("email"));
+                customer.setName(name);
+                customer.setAddress(address != null ? address : "");
+                customer.setTelephone(telephone);
+                customer.setEmail(email != null ? email : "");
                 
-                if (customerService.validateCustomerData(customer)) {
-                    boolean success = customerService.updateCustomer(customer);
-                    if (success) {
-                        out.print("{\"success\":true,\"message\":\"Customer updated successfully\"}");
-                    } else {
-                        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        out.print("{\"success\":false,\"message\":\"Failed to update customer\"}");
-                    }
+                boolean success = customerService.updateCustomer(customer);
+                if (success) {
+                    out.print("{\"success\":true,\"message\":\"Customer updated successfully\"}");
                 } else {
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.print("{\"success\":false,\"message\":\"Invalid customer data\"}");
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    out.print("{\"success\":false,\"message\":\"Failed to update customer\"}");
                 }
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"success\":false,\"message\":\"Customer ID is required\"}");
             }
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.print("{\"success\":false,\"message\":\"Invalid customer ID format\"}");
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.print("{\"success\":false,\"message\":\"Internal server error\"}");
+            out.print("{\"success\":false,\"message\":\"Internal server error: " + e.getMessage() + "\"}");
             e.printStackTrace();
         }
     }
@@ -165,6 +202,7 @@ public class CustomerServlet extends HttpServlet {
         
         String pathInfo = request.getPathInfo();
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         
         try {
@@ -178,11 +216,64 @@ public class CustomerServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     out.print("{\"success\":false,\"message\":\"Failed to delete customer\"}");
                 }
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"success\":false,\"message\":\"Customer ID is required\"}");
             }
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.print("{\"success\":false,\"message\":\"Invalid customer ID format\"}");
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.print("{\"success\":false,\"message\":\"Internal server error\"}");
+            out.print("{\"success\":false,\"message\":\"Internal server error: " + e.getMessage() + "\"}");
             e.printStackTrace();
         }
+    }
+    
+    // Helper method to safely get parameters
+    private String getParameterSafely(HttpServletRequest request, String paramName) {
+        String value = request.getParameter(paramName);
+        return (value != null && !value.trim().isEmpty()) ? value.trim() : null;
+    }
+    
+    // Helper method to parse request body for PUT requests
+    private Map<String, String> parseRequestBody(HttpServletRequest request) throws IOException {
+        Map<String, String> params = new HashMap<>();
+        
+        StringBuilder body = new StringBuilder();
+        BufferedReader reader = request.getReader();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            body.append(line);
+        }
+        
+        String bodyString = body.toString();
+        System.out.println("Raw request body: " + bodyString);
+        
+        if (!bodyString.isEmpty()) {
+            String[] pairs = bodyString.split("&");
+            for (String pair : pairs) {
+                if (pair.contains("=")) {
+                    String[] keyValue = pair.split("=", 2);
+                    try {
+                        String key = URLDecoder.decode(keyValue[0], "UTF-8");
+                        String value = keyValue.length > 1 ? URLDecoder.decode(keyValue[1], "UTF-8") : "";
+                        // Only add non-empty values
+                        if (!value.trim().isEmpty()) {
+                            params.put(key, value.trim());
+                        }
+                        System.out.println("Parsed parameter: " + key + " = " + value);
+                    } catch (Exception e) {
+                        System.err.println("Error parsing parameter: " + pair);
+                    }
+                }
+            }
+        }
+        
+        return params;
+    }
+    
+    private String generateAccountNumber() {
+        return "PAH" + System.currentTimeMillis();
     }
 }
