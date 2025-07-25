@@ -465,3 +465,96 @@ function showAlert(message, type) {
         $('.alert').alert('close');
     }, 5000);
 }
+
+function editCustomer(customerId) {
+    $.ajax({
+        url: 'customer/' + customerId,
+        method: 'GET',
+        success: function(customer) {
+            // Populate edit form
+            $('#editCustomerModal input[name="customerId"]').val(customer.customerId);
+            $('#editCustomerModal input[name="accountNumber"]').val(customer.accountNumber);
+            $('#editCustomerModal input[name="name"]').val(customer.name);
+            $('#editCustomerModal textarea[name="address"]').val(customer.address);
+            $('#editCustomerModal input[name="telephone"]').val(customer.telephone);
+            $('#editCustomerModal input[name="email"]').val(customer.email);
+            
+            $('#editCustomerModal').modal('show');
+        },
+        error: function() {
+            showAlert('Error loading customer data', 'danger');
+        }
+    });
+}
+
+function editItem(itemId) {
+    $.ajax({
+        url: 'item/' + itemId,
+        method: 'GET',
+        success: function(item) {
+            // Populate edit form
+            $('#editItemModal input[name="itemId"]').val(item.itemId);
+            $('#editItemModal input[name="itemCode"]').val(item.itemCode);
+            $('#editItemModal input[name="title"]').val(item.title);
+            $('#editItemModal input[name="author"]').val(item.author);
+            $('#editItemModal select[name="category"]').val(item.category);
+            $('#editItemModal input[name="price"]').val(item.price);
+            $('#editItemModal input[name="stockQuantity"]').val(item.stockQuantity);
+            
+            $('#editItemModal').modal('show');
+        },
+        error: function() {
+            showAlert('Error loading item data', 'danger');
+        }
+    });
+}
+
+function updateCustomer() {
+    const customerId = $('#editCustomerModal input[name="customerId"]').val();
+    const formData = new FormData(document.getElementById('editCustomerForm'));
+    
+    $.ajax({
+        url: 'customer/' + customerId,
+        method: 'PUT',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                $('#editCustomerModal').modal('hide');
+                showAlert('Customer updated successfully', 'success');
+                loadCustomers();
+            } else {
+                showAlert(response.message, 'danger');
+            }
+        },
+        error: function() {
+            showAlert('Error updating customer', 'danger');
+        }
+    });
+}
+
+function updateItem() {
+    const itemId = $('#editItemModal input[name="itemId"]').val();
+    const formData = new FormData(document.getElementById('editItemForm'));
+    
+    $.ajax({
+        url: 'item/' + itemId,
+        method: 'PUT',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                $('#editItemModal').modal('hide');
+                showAlert('Item updated successfully', 'success');
+                loadItems();
+            } else {
+                showAlert(response.message, 'danger');
+            }
+        },
+        error: function() {
+            showAlert('Error updating item', 'danger');
+        }
+    });
+}

@@ -501,6 +501,104 @@
         </div>
     </div>
     
+    <!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Customer</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomerForm">
+                    <input type="hidden" name="customerId">
+                    <div class="form-group">
+                        <label>Account Number</label>
+                        <input type="text" class="form-control" name="accountNumber" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea class="form-control" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Telephone *</label>
+                        <input type="text" class="form-control" name="telephone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateCustomer()">Update Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Item</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editItemForm">
+                    <input type="hidden" name="itemId">
+                    <div class="form-group">
+                        <label>Item Code *</label>
+                        <input type="text" class="form-control" name="itemCode" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Author</label>
+                        <input type="text" class="form-control" name="author">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="form-control" name="category">
+                            <option value="">Select Category</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Academic">Academic</option>
+                            <option value="Children">Children</option>
+                            <option value="Reference">Reference</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Price *</label>
+                        <input type="number" class="form-control" name="price" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Quantity *</label>
+                        <input type="number" class="form-control" name="stockQuantity" min="0" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateItem()">Update Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+    
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/dashboard.js"></script>

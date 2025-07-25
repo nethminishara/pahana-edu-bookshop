@@ -76,13 +76,29 @@ public class CustomerServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         try {
-            // Create new customer
+            // Get parameters
+            String accountNumber = request.getParameter("accountNumber");
+            String name = request.getParameter("name");
+            String address = request.getParameter("address");
+            String telephone = request.getParameter("telephone");
+            String email = request.getParameter("email");
+            
+            // Validate required fields
+            if (name == null || name.trim().isEmpty() ||
+                telephone == null || telephone.trim().isEmpty()) {
+                
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"success\":false,\"message\":\"Name and telephone are required\"}");
+                return;
+            }
+            
+            // Create customer object
             Customer customer = new Customer();
-            customer.setAccountNumber(request.getParameter("accountNumber"));
-            customer.setName(request.getParameter("name"));
-            customer.setAddress(request.getParameter("address"));
-            customer.setTelephone(request.getParameter("telephone"));
-            customer.setEmail(request.getParameter("email"));
+            customer.setAccountNumber(accountNumber != null ? accountNumber.trim() : "");
+            customer.setName(name.trim());
+            customer.setAddress(address != null ? address.trim() : "");
+            customer.setTelephone(telephone.trim());
+            customer.setEmail(email != null ? email.trim() : "");
             
             if (customerService.validateCustomerData(customer)) {
                 boolean success = customerService.addCustomer(customer);
@@ -90,18 +106,19 @@ public class CustomerServlet extends HttpServlet {
                     out.print("{\"success\":true,\"message\":\"Customer added successfully\"}");
                 } else {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    out.print("{\"success\":false,\"message\":\"Failed to add customer\"}");
+                    out.print("{\"success\":false,\"message\":\"Failed to add customer - database error\"}");
                 }
             } else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print("{\"success\":false,\"message\":\"Invalid customer data\"}");
             }
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.print("{\"success\":false,\"message\":\"Internal server error\"}");
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            out.print("{\"success\":false,\"message\":\"Internal server error: " + e.getMessage() + "\"}");
         }
     }
+
     
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
