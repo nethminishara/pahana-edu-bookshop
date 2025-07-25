@@ -1,7 +1,7 @@
 package com.pahanaedu.servlet;
 
-import com.pahanaedu.model.Customer;
-import com.pahanaedu.service.CustomerService;
+import com.pahanaedu.model.Item;
+import com.pahanaedu.service.ItemService;
 import com.google.gson.Gson;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -10,15 +10,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 
-@WebServlet("/customer/*")
-public class CustomerServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L; // Add this line
-    private CustomerService customerService;
+@WebServlet("/item/*")
+public class ItemServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+    private ItemService itemService;
     private Gson gson;
     
     @Override
     public void init() throws ServletException {
-        customerService = new CustomerService();
+        itemService = new ItemService();
         gson = new Gson();
     }
     
@@ -32,33 +32,33 @@ public class CustomerServlet extends HttpServlet {
         
         try {
             if (pathInfo == null || pathInfo.equals("/")) {
-                // Get all customers
-                List<Customer> customers = customerService.getAllCustomers();
-                out.print(gson.toJson(customers));
-            } else if (pathInfo.startsWith("/account/")) {
-                // Get customer by account number
-                String accountNumber = pathInfo.substring(9);
-                Customer customer = customerService.getCustomerByAccountNumber(accountNumber);
-                if (customer != null) {
-                    out.print(gson.toJson(customer));
+                // Get all items
+                List<Item> items = itemService.getAllItems();
+                out.print(gson.toJson(items));
+            } else if (pathInfo.startsWith("/code/")) {
+                // Get item by code
+                String itemCode = pathInfo.substring(6);
+                Item item = itemService.getItemByCode(itemCode);
+                if (item != null) {
+                    out.print(gson.toJson(item));
                 } else {
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                    out.print("{\"error\":\"Customer not found\"}");
+                    out.print("{\"error\":\"Item not found\"}");
                 }
             } else if (pathInfo.startsWith("/")) {
-                // Get customer by ID
+                // Get item by ID
                 try {
-                    int customerId = Integer.parseInt(pathInfo.substring(1));
-                    Customer customer = customerService.getCustomerById(customerId);
-                    if (customer != null) {
-                        out.print(gson.toJson(customer));
+                    int itemId = Integer.parseInt(pathInfo.substring(1));
+                    Item item = itemService.getItemById(itemId);
+                    if (item != null) {
+                        out.print(gson.toJson(item));
                     } else {
                         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                        out.print("{\"error\":\"Customer not found\"}");
+                        out.print("{\"error\":\"Item not found\"}");
                     }
                 } catch (NumberFormatException e) {
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.print("{\"error\":\"Invalid customer ID\"}");
+                    out.print("{\"error\":\"Invalid item ID\"}");
                 }
             }
         } catch (Exception e) {
@@ -76,25 +76,26 @@ public class CustomerServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         try {
-            // Create new customer
-            Customer customer = new Customer();
-            customer.setAccountNumber(request.getParameter("accountNumber"));
-            customer.setName(request.getParameter("name"));
-            customer.setAddress(request.getParameter("address"));
-            customer.setTelephone(request.getParameter("telephone"));
-            customer.setEmail(request.getParameter("email"));
+            // Create new item
+            Item item = new Item();
+            item.setItemCode(request.getParameter("itemCode"));
+            item.setTitle(request.getParameter("title"));
+            item.setAuthor(request.getParameter("author"));
+            item.setCategory(request.getParameter("category"));
+            item.setPrice(Double.parseDouble(request.getParameter("price")));
+            item.setStockQuantity(Integer.parseInt(request.getParameter("stockQuantity")));
             
-            if (customerService.validateCustomerData(customer)) {
-                boolean success = customerService.addCustomer(customer);
+            if (itemService.validateItemData(item)) {
+                boolean success = itemService.addItem(item);
                 if (success) {
-                    out.print("{\"success\":true,\"message\":\"Customer added successfully\"}");
+                    out.print("{\"success\":true,\"message\":\"Item added successfully\"}");
                 } else {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    out.print("{\"success\":false,\"message\":\"Failed to add customer\"}");
+                    out.print("{\"success\":false,\"message\":\"Failed to add item\"}");
                 }
             } else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.print("{\"success\":false,\"message\":\"Invalid customer data\"}");
+                out.print("{\"success\":false,\"message\":\"Invalid item data\"}");
             }
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -113,26 +114,27 @@ public class CustomerServlet extends HttpServlet {
         
         try {
             if (pathInfo != null && pathInfo.length() > 1) {
-                int customerId = Integer.parseInt(pathInfo.substring(1));
+                int itemId = Integer.parseInt(pathInfo.substring(1));
                 
-                Customer customer = new Customer();
-                customer.setCustomerId(customerId);
-                customer.setName(request.getParameter("name"));
-                customer.setAddress(request.getParameter("address"));
-                customer.setTelephone(request.getParameter("telephone"));
-                customer.setEmail(request.getParameter("email"));
+                Item item = new Item();
+                item.setItemId(itemId);
+                item.setTitle(request.getParameter("title"));
+                item.setAuthor(request.getParameter("author"));
+                item.setCategory(request.getParameter("category"));
+                item.setPrice(Double.parseDouble(request.getParameter("price")));
+                item.setStockQuantity(Integer.parseInt(request.getParameter("stockQuantity")));
                 
-                if (customerService.validateCustomerData(customer)) {
-                    boolean success = customerService.updateCustomer(customer);
+                if (itemService.validateItemData(item)) {
+                    boolean success = itemService.updateItem(item);
                     if (success) {
-                        out.print("{\"success\":true,\"message\":\"Customer updated successfully\"}");
+                        out.print("{\"success\":true,\"message\":\"Item updated successfully\"}");
                     } else {
                         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                        out.print("{\"success\":false,\"message\":\"Failed to update customer\"}");
+                        out.print("{\"success\":false,\"message\":\"Failed to update item\"}");
                     }
                 } else {
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.print("{\"success\":false,\"message\":\"Invalid customer data\"}");
+                    out.print("{\"success\":false,\"message\":\"Invalid item data\"}");
                 }
             }
         } catch (Exception e) {
@@ -152,14 +154,14 @@ public class CustomerServlet extends HttpServlet {
         
         try {
             if (pathInfo != null && pathInfo.length() > 1) {
-                int customerId = Integer.parseInt(pathInfo.substring(1));
-                boolean success = customerService.deleteCustomer(customerId);
+                int itemId = Integer.parseInt(pathInfo.substring(1));
+                boolean success = itemService.deleteItem(itemId);
                 
                 if (success) {
-                    out.print("{\"success\":true,\"message\":\"Customer deleted successfully\"}");
+                    out.print("{\"success\":true,\"message\":\"Item deleted successfully\"}");
                 } else {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    out.print("{\"success\":false,\"message\":\"Failed to delete customer\"}");
+                    out.print("{\"success\":false,\"message\":\"Failed to delete item\"}");
                 }
             }
         } catch (Exception e) {
