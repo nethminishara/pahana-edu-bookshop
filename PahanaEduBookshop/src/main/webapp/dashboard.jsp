@@ -331,7 +331,8 @@
                 
                 <!-- Help Section -->
                 <div id="help" class="content-section">
-                    <h2 class="mb-4">Help & Documentation</h2>
+                    <h2 class="mb-4">Help &amp; Documentation</h2>
+
                     
                     <div class="card">
                         <div class="card-body">
