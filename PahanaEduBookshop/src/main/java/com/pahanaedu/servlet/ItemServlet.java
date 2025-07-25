@@ -76,14 +76,46 @@ public class ItemServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         try {
-            // Create new item
+            // Get and validate parameters
+            String itemCode = request.getParameter("itemCode");
+            String title = request.getParameter("title");
+            String author = request.getParameter("author");
+            String category = request.getParameter("category");
+            String priceStr = request.getParameter("price");
+            String stockStr = request.getParameter("stockQuantity");
+            
+            // Validate required fields
+            if (itemCode == null || itemCode.trim().isEmpty() ||
+                title == null || title.trim().isEmpty() ||
+                priceStr == null || priceStr.trim().isEmpty() ||
+                stockStr == null || stockStr.trim().isEmpty()) {
+                
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"success\":false,\"message\":\"All required fields must be filled\"}");
+                return;
+            }
+            
+            // Parse numeric values with error handling
+            double price;
+            int stockQuantity;
+            
+            try {
+                price = Double.parseDouble(priceStr.trim());
+                stockQuantity = Integer.parseInt(stockStr.trim());
+            } catch (NumberFormatException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.print("{\"success\":false,\"message\":\"Invalid price or stock quantity\"}");
+                return;
+            }
+            
+            // Create item object
             Item item = new Item();
-            item.setItemCode(request.getParameter("itemCode"));
-            item.setTitle(request.getParameter("title"));
-            item.setAuthor(request.getParameter("author"));
-            item.setCategory(request.getParameter("category"));
-            item.setPrice(Double.parseDouble(request.getParameter("price")));
-            item.setStockQuantity(Integer.parseInt(request.getParameter("stockQuantity")));
+            item.setItemCode(itemCode.trim());
+            item.setTitle(title.trim());
+            item.setAuthor(author != null ? author.trim() : "");
+            item.setCategory(category != null ? category.trim() : "");
+            item.setPrice(price);
+            item.setStockQuantity(stockQuantity);
             
             if (itemService.validateItemData(item)) {
                 boolean success = itemService.addItem(item);
@@ -91,18 +123,19 @@ public class ItemServlet extends HttpServlet {
                     out.print("{\"success\":true,\"message\":\"Item added successfully\"}");
                 } else {
                     response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                    out.print("{\"success\":false,\"message\":\"Failed to add item\"}");
+                    out.print("{\"success\":false,\"message\":\"Failed to add item - database error\"}");
                 }
             } else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out.print("{\"success\":false,\"message\":\"Invalid item data\"}");
             }
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            out.print("{\"success\":false,\"message\":\"Internal server error\"}");
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            out.print("{\"success\":false,\"message\":\"Internal server error: " + e.getMessage() + "\"}");
         }
     }
+
     
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
